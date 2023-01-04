@@ -224,10 +224,6 @@ origin_plot <- function () {
     group_by(region) %>%
     summarise(n = sum(athletes))
 
-  plot_data %>%
-    select(region, n) %>%
-    print(n = nrow(.))
-
   # Add plot data to geoJson
   choropeth_data <- map_data("world") %>%
     left_join(plot_data, by="region")
