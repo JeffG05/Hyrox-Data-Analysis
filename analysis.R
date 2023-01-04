@@ -199,8 +199,78 @@ popularity_plot <- function () {
       )
 }
 
+# Code for origin plot
+origin_plot <- function () {
+
+  # Define custom dictionaries for unrecognised nationalities
+  custom_match_country <- c(
+    "ENG" = "UK",
+    "GIB" = "UK",
+    "SIN" = "Singapore",
+    "TRI" = "Trinidad",
+    "TWN" = "Taiwan",
+    "CZE" = "Czech Republic",
+    "GBR" = "UK",
+    "HKG" = "China",
+    "USA" = "USA"
+  )
+
+  # Calculate number of atheletes per country
+  plot_data <- data %>%
+    filter(nationality != "CIV") %>%
+    mutate(
+      region = countrycode(nationality, "ioc", "country.name", custom_match = custom_match_country),
+    ) %>%
+    group_by(region) %>%
+    summarise(n = sum(athletes))
+
+  plot_data %>%
+    select(region, n) %>%
+    print(n = nrow(.))
+
+  # Add plot data to geoJson
+  choropeth_data <- map_data("world") %>%
+    left_join(plot_data, by="region")
+
+  # Draw plot
+  choropeth_data %>%
+    ggplot() +
+      # Draw choropeth map
+      geom_polygon(aes(x=long, y = lat, fill = n, group = group), color = "black", linewidth = 0.1) +
+
+      # Define custom fill gradient
+      scale_fill_gradient(
+        low = "#262626",
+        high = "yellow",
+        na.value = "#262626",
+        trans = "log1p",
+        breaks = c(5000, 500, 50, 5, 1),
+        name = "Athletes",
+      ) +
+
+      # Add custom theme
+      theme_hyrox() +
+      theme(
+        panel.grid = element_blank(),
+        axis.text = element_blank(),
+        axis.title.x.bottom = element_blank(),
+        axis.title.y.left = element_blank(),
+        plot.margin = margin(l=0, b=0),
+        legend.position = "bottom",
+        legend.key.width = unit(2, "cm"),
+        legend.margin = margin(b = 10, t = 0),
+        legend.title = element_text(margin = margin(r = 20, b = 10)),
+        legend.text = element_text(margin = margin(r = 10))
+      ) +
+
+      # Add label
+      labs(
+        title = "Origin Map"
+      )
+}
+
 # Code for travel plot
-travel_map <- function () {
+travel_plot <- function () {
 
   # Download lat lon for each country
   country_data <- read_csv("https://raw.githubusercontent.com/albertyw/avenews/master/old/data/average-latitude-longitude-countries.csv")
@@ -236,7 +306,6 @@ travel_map <- function () {
       end_lat = countrycode(nationality_code, "ISO 3166 Country Code", "Latitude", custom_dict = country_data),
       end_lng = countrycode(nationality_code, "ISO 3166 Country Code", "Longitude", custom_dict = country_data)
     ) %>%
-    filter(!is.na(start_lat) & !is.na(end_lat)) %>%
     filter(country_code != nationality_code)
 
   # Draw connection graph plot
